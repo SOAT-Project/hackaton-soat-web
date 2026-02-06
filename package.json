@@ -1,0 +1,31 @@
+{
+	"name": "hackaton-soat-web",
+	"type": "module",
+	"private": true,
+	"scripts": {
+		"build": "nuxt build",
+		"dev": "nuxt dev",
+		"generate": "nuxt generate",
+		"preview": "nuxt preview",
+		"postinstall": "nuxt prepare"
+	},
+	"dependencies": {
+		"@formkit/auto-animate": "^0.9.0",
+		"@morev/vue-transitions": "^3.0.5",
+		"@nuxt/ui": "^4.4.0",
+		"@vueuse/core": "^14.2.0",
+		"@vueuse/nuxt": "^14.2.0",
+		"motion-v": "^1.10.2",
+		"nuxt": "^4.3.0",
+		"oidc-client-ts": "^3.4.1",
+		"tailwindcss": "^4.1.18",
+		"vue": "^3.5.27",
+		"vue-router": "^4.6.4",
+		"zod": "^4.3.6"
+	},
+	"devDependencies": {
+		"@nuxt/icon": "^2.2.1",
+		"@nuxtjs/color-mode": "^4.0.0",
+		"@types/node": "^25.2.1"
+	}
+}
