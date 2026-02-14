@@ -36,6 +36,9 @@ const removeFile = (file: File) => {
 };
 
 const { login, isAuthenticated } = useCognitoAuth();
+const toast = useToast();
+const emit = defineEmits(["submit"]);
+const config = useRuntimeConfig();
 
 async function onSubmit(event: FormSubmitEvent<Schema>) {
 	console.log(event.data);
@@ -45,6 +48,54 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
 		loading.value = false;
 		return;
 	}
+
+	if (config.public.AMBIENT === "dev") {
+		toast.add({
+			title: "Upload bem-sucedido",
+			description:
+				"Seus vídeos foram enviados com sucesso! O processamento pode levar alguns minutos.",
+			color: "success",
+		});
+		emit("submit");
+		state.videoList = [];
+		return;
+	}
+
+	fetch("/api/process-videos", {
+		method: "POST",
+		body: JSON.stringify({
+			videos: event.data.videoList.map((file) => ({
+				name: file.name,
+				type: file.type,
+				size: file.size,
+			})),
+		}),
+		headers: {
+			"Content-Type": "application/json",
+		},
+	})
+		.then((res) => res.json())
+		.then((data) => {
+			toast.add({
+				title: "Upload bem-sucedido",
+				description:
+					"Seus vídeos foram enviados com sucesso! O processamento pode levar alguns minutos.",
+				color: "success",
+			});
+			emit("submit", data);
+			state.videoList = [];
+		})
+		.catch((err) => {
+			toast.add({
+				title: "Erro no upload",
+				description:
+					"Ocorreu um erro ao enviar os vídeos. Por favor, tente novamente.",
+				color: "error",
+			});
+		})
+		.finally(() => {
+			loading.value = false;
+		});
 }
 </script>
 
@@ -74,18 +125,6 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
 				:interactive="true"
 				accept="video/mp4,video/avi,video/quicktime,video/x-matroska"
 			>
-				<template #files="{ files }">
-					<div class="flex flex-col w-full gap-2">
-						<CardItem
-							v-for="file in files"
-							:key="file.name"
-							:file="file"
-							showRemoveButton
-							:inProcessing="loading"
-							@remove="removeFile"
-						/>
-					</div>
-				</template>
 			</UFileUpload>
 		</UFormField>
 
@@ -94,6 +133,7 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
 				type="submit"
 				label="Processar Vídeos"
 				color="primary"
+				class="cursor-pointer"
 				:loading="loading"
 			/>
 		</div>
