@@ -1,75 +1,89 @@
-# Nuxt Minimal Starter
+# Hackaton SOAT Web
 
-Look at the [Nuxt documentation](https://nuxt.com/docs/getting-started/introduction) to learn more.
+Projeto web desenvolvido com [Nuxt 3](https://nuxt.com/) para o Hackaton SOAT.
 
-## Setup
+## Descrição
 
-Make sure to install dependencies:
+Este projeto é uma aplicação web moderna, utilizando Nuxt 3, TypeScript e uma estrutura modular para facilitar o desenvolvimento, manutenção e escalabilidade. O objetivo é fornecer uma interface intuitiva para manipulação de arquivos, autenticação e visualização de dados.
 
-```bash
-# npm
-npm install
+## Funcionalidades
 
-# pnpm
-pnpm install
+- Upload e visualização de arquivos
+- Autenticação via Cognito
+- Listagem de itens
+- Controle de modo de cor (dark/light)
+- Interface responsiva
 
-# yarn
-yarn install
+## Estrutura do Projeto
 
-# bun
-bun install
+```
+hackaton-soat-web/
+├── app/
+│   ├── assets/
+│   │   └── css/
+│   │       └── main.css
+│   ├── components/
+│   │   ├── CardItem.vue
+│   │   ├── ColorModeButton.vue
+│   │   ├── Default.vue
+│   │   ├── FileForm.vue
+│   │   ├── Footer.vue
+│   │   ├── Header.vue
+│   │   └── List.vue
+│   ├── composables/
+│   │   ├── event.ts
+│   │   └── useCognitoAuth.ts
+│   ├── interface/
+│   │   └── file.interface.ts
+│   ├── mocks/
+│   │   └── files.mock.ts
+│   ├── pages/
+│   │   └── index.vue
+│   └── utils/
+│       └── formatByteSize.ts
+├── public/
+│   ├── robots.txt
+│   └── silent-renew.html
+├── nuxt.config.ts
+├── package.json
+├── tsconfig.json
+└── README.md
 ```
 
-## Development Server
+## Instalação
 
-Start the development server on `http://localhost:3000`:
+1. Clone o repositório:
+    ```bash
+    git clone https://github.com/SOAT-Project/hackaton-soat-web.git
+    ```
+2. Acesse o diretório do projeto:
+    ```bash
+    cd hackaton-soat-web
+    ```
+3. Instale as dependências:
+    ```bash
+    npm install
+    ```
+
+## Uso
+
+Para iniciar o servidor de desenvolvimento:
 
 ```bash
-# npm
 npm run dev
-
-# pnpm
-pnpm dev
-
-# yarn
-yarn dev
-
-# bun
-bun run dev
 ```
 
-## Production
+Acesse [http://localhost:3000](http://localhost:3000) no navegador.
 
-Build the application for production:
+## Scripts Disponíveis
 
-```bash
-# npm
-npm run build
+- `npm run dev`: Inicia o servidor de desenvolvimento
+- `npm run build`: Gera o build de produção
+- `npm run preview`: Visualiza o build de produção localmente
 
-# pnpm
-pnpm build
+## Tecnologias Utilizadas
 
-# yarn
-yarn build
-
-# bun
-bun run build
-```
-
-Locally preview production build:
-
-```bash
-# npm
-npm run preview
-
-# pnpm
-pnpm preview
-
-# yarn
-yarn preview
-
-# bun
-bun run preview
-```
-
-Check out the [deployment documentation](https://nuxt.com/docs/getting-started/deployment) for more information.
+- Nuxt 3
+- TypeScript
+- CSS
+- AWS Cognito (autenticação)
