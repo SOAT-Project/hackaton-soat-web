@@ -30,8 +30,15 @@ onUnmounted(() => {
 	}
 });
 
+const { idToken } = useCognitoAuth();
+
 const download = (file: FileItem) => {
-	$fetch(`/api/download`)
+	$fetch(`/api/download`, {
+		method: "GET",
+		headers: {
+			Authorization: `Bearer ${idToken.value}`,
+		},
+	})
 		.then((response) => {
 			const res = response as Response;
 			if (!res.ok) {

@@ -14,9 +14,46 @@ env:
   NODE_VERSION: 24
 
 jobs:
+  set_environment:
+    runs-on: ubuntu-latest
+    outputs:
+      mapped_environment: ${{ steps.branch_map.outputs.environment }}
+
+    steps:
+      - id: branch_map
+        run: |
+          BRANCH_NAME="${{ github.ref_name }}"
+          ENVIRONMENT=""
+
+          case "$BRANCH_NAME" in
+            "develop")
+              ENVIRONMENT="dev"
+              ;;
+            "release")
+              ENVIRONMENT="hom"
+              ;;
+            "main")
+              ENVIRONMENT="prod"
+              ;;
+            *)
+              echo "Branch $BRANCH_NAME não mapeada para um ambiente de deploy. Abortando."
+              exit 1
+              ;;
+          esac
+
+          echo "environment=$ENVIRONMENT" >> $GITHUB_OUTPUT
+          echo "Ambiente mapeado: $ENVIRONMENT"
+
   build:
     name: Build Nuxt
     runs-on: ubuntu-latest
+    env:
+      ENVIRONMENT: ${{ needs.set_environment.outputs.mapped_environment }}
+      NUXT_COGNITO_CLIENT_ID: ${{ fromJSON('{"dev":"${{ secrets.NUXT_COGNITO_CLIENT_ID_DEV }}","hom":"${{ secrets.NUXT_COGNITO_CLIENT_ID_HOM }}","prod":"${{ secrets.NUXT_COGNITO_CLIENT_ID_PROD }}"}')[needs.set_environment.outputs.mapped_environment] }}
+      NUXT_COGNITO_REGION: ${{ fromJSON('{"dev":"${{ secrets.NUXT_COGNITO_REGION_DEV }}","hom":"${{ secrets.NUXT_COGNITO_REGION_HOM }}","prod":"${{ secrets.NUXT_COGNITO_REGION_PROD }}"}')[needs.set_environment.outputs.mapped_environment] }}
+      NUXT_COGNITO_AUTHORITY: ${{ fromJSON('{"dev":"${{ secrets.NUXT_COGNITO_AUTHORITY_DEV }}","hom":"${{ secrets.NUXT_COGNITO_AUTHORITY_HOM }}","prod":"${{ secrets.NUXT_COGNITO_AUTHORITY_PROD }}"}')[needs.set_environment.outputs.mapped_environment] }}
+      NUXT_COGNITO_REDIRECT_URI: ${{ fromJSON('{"dev":"${{ secrets.NUXT_COGNITO_REDIRECT_URI_DEV }}","hom":"${{ secrets.NUXT_COGNITO_REDIRECT_URI_HOM }}","prod":"${{ secrets.NUXT_COGNITO_REDIRECT_URI_PROD }}"}')[needs.set_environment.outputs.mapped_environment] }}
+      NUXT_AMBIENT: test
 
     steps:
       - name: Checkout
@@ -27,6 +64,14 @@ jobs:
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: npm
+
+      - name: Create .env file
+        run: |
+          echo "NUXT_COGNITO_CLIENT_ID=${{ env.NUXT_COGNITO_CLIENT_ID }}" > .env
+          echo "NUXT_COGNITO_REGION=${{ env.NUXT_COGNITO_REGION }}" >> .env
+          echo "NUXT_COGNITO_AUTHORITY=${{ env.NUXT_COGNITO_AUTHORITY }}" >> .env
+          echo "NUXT_COGNITO_REDIRECT_URI=${{ env.NUXT_COGNITO_REDIRECT_URI }}" >> .env
+          echo "NUXT_AMBIENT=${{ env.NUXT_AMBIENT }}" >> .env
 
       - name: Install dependencies
         run: npm ci
@@ -47,7 +92,11 @@ jobs:
   deploy:
     name: Deploy to AWS
     runs-on: ubuntu-latest
-    needs: build
+    needs: [build, set_environment]
+    env:
+      ENVIRONMENT: ${{ needs.set_environment.outputs.mapped_environment }}
+      AWS_S3_BUCKET: soat-hackaton-soat-web-${{ needs.set_environment.outputs.mapped_environment }}
+      AWS_CLOUDFRONT_DISTRIBUTION_ID: soat-hackaton-soat-web-oac-${{ needs.set_environment.outputs.mapped_environment }}
 
     steps:
       - name: Download artifact
@@ -64,13 +113,13 @@ jobs:
 
       - name: Upload assets (long cache)
         run: |
-          aws s3 sync dist s3://${{ secrets.AWS_S3_BUCKET }} \
+          aws s3 sync dist s3://${{ env.AWS_S3_BUCKET }} \
             --exclude "*.html" \
             --cache-control "max-age=31536000,public"
 
       - name: Upload HTML (no cache)
         run: |
-          aws s3 sync dist s3://${{ secrets.AWS_S3_BUCKET }} \
+          aws s3 sync dist s3://${{ env.AWS_S3_BUCKET }} \
             --include "*.html" \
             --exclude "*" \
             --cache-control "max-age=0,no-cache,no-store,must-revalidate"
@@ -78,5 +127,5 @@ jobs:
       - name: Invalidate CloudFront
         run: |
           aws cloudfront create-invalidation \
-            --distribution-id ${{ secrets.AWS_CLOUDFRONT_DISTRIBUTION_ID }} \
+            --distribution-id ${{ env.AWS_CLOUDFRONT_DISTRIBUTION_ID }} \
             --paths "/*"

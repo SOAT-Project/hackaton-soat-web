@@ -2,7 +2,7 @@
 import type { FileItem } from "~/interface/file.interface";
 import { filesProcessedMock, filesProcessingMock } from "~/mocks/files.mock";
 
-const { isAuthenticated } = useCognitoAuth();
+const { isAuthenticated, idToken } = useCognitoAuth();
 const toast = useToast();
 const config = useRuntimeConfig();
 
@@ -11,12 +11,17 @@ const processedFiles = ref<FileItem[]>([]);
 
 const fetchProcessedVideos = async () => {
 	try {
-		if (config.public.AMBIENT === "dev") {
+		if (config.public.AMBIENT === "test") {
 			processedFiles.value = filesProcessedMock;
 			return;
 		}
 
-		const response = await fetch("/api/processed-videos");
+		const response = await fetch("/api/processed-videos", {
+			method: "GET",
+			headers: {
+				Authorization: `Bearer ${idToken.value}`,
+			},
+		});
 		const data = await response.json();
 		processedFiles.value = data.files;
 	} catch (error) {
@@ -30,12 +35,17 @@ const fetchProcessedVideos = async () => {
 
 const fetchProcessingVideos = async () => {
 	try {
-		if (config.public.AMBIENT === "dev") {
+		if (config.public.AMBIENT === "test") {
 			processingFiles.value = filesProcessingMock;
 			return;
 		}
 
-		const response = await fetch("/api/processing-videos");
+		const response = await fetch("/api/processing-videos", {
+			method: "GET",
+			headers: {
+				Authorization: `Bearer ${idToken.value}`,
+			},
+		});
 		const data = await response.json();
 		processingFiles.value = data.files;
 

@@ -35,7 +35,7 @@ const removeFile = (file: File) => {
 	state.videoList = state.videoList.filter((f) => f.name !== file.name);
 };
 
-const { login, isAuthenticated } = useCognitoAuth();
+const { login, isAuthenticated, idToken } = useCognitoAuth();
 const toast = useToast();
 const emit = defineEmits(["submit"]);
 const config = useRuntimeConfig();
@@ -49,7 +49,7 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
 		return;
 	}
 
-	if (config.public.AMBIENT === "dev") {
+	if (config.public.AMBIENT === "test") {
 		toast.add({
 			title: "Upload bem-sucedido",
 			description:
@@ -72,6 +72,7 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
 		}),
 		headers: {
 			"Content-Type": "application/json",
+			Authorization: `Bearer ${idToken.value}`,
 		},
 	})
 		.then((res) => res.json())
