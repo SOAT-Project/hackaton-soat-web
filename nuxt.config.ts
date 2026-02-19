@@ -23,6 +23,7 @@ export default defineNuxtConfig({
 			COGNITO_AUTHORITY: process.env.NUXT_COGNITO_AUTHORITY || "",
 			COGNITO_REDIRECT_URI: process.env.NUXT_COGNITO_REDIRECT_URI || "",
 			AMBIENT: process.env.NUXT_AMBIENT || "test",
+			API_BASE_URL: process.env.NUXT_API_BASE_URL || "",
 		},
 	},
 
