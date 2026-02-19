@@ -1,43 +1,36 @@
 <script lang="ts" setup>
 import type { FileItem } from "~/interface/file.interface";
-import { filesProcessedMock, filesProcessingMock } from "~/mocks/files.mock";
+import {
+	VideoStatus,
+	type ListVideosResponse,
+	type VideoResponse,
+} from "~/interface/response.interface";
 
-const { isAuthenticated } = useCognitoAuth();
+const { isAuthenticated, idToken } = useCognitoAuth();
 const toast = useToast();
 const config = useRuntimeConfig();
 
-const processingFiles = ref<FileItem[]>([]);
-const processedFiles = ref<FileItem[]>([]);
+const processingFiles = ref<VideoResponse[]>([]);
+const processedFiles = ref<VideoResponse[]>([]);
 
-const fetchProcessedVideos = async () => {
+const fetchVideos = async () => {
 	try {
-		if (config.public.AMBIENT === "dev") {
-			processedFiles.value = filesProcessedMock;
-			return;
-		}
-
-		const response = await fetch("/api/processed-videos");
-		const data = await response.json();
-		processedFiles.value = data.files;
-	} catch (error) {
-		toast.add({
-			title: "Erro ao buscar vídeos",
-			description: "Ocorreu um erro ao buscar os vídeos processados.",
-			color: "error",
-		});
-	}
-};
-
-const fetchProcessingVideos = async () => {
-	try {
-		if (config.public.AMBIENT === "dev") {
-			processingFiles.value = filesProcessingMock;
-			return;
-		}
-
-		const response = await fetch("/api/processing-videos");
-		const data = await response.json();
-		processingFiles.value = data.files;
+		const response = await fetch(
+			`${config.public.API_BASE_URL}/processing-videos?userId=${idToken.value}`,
+			{
+				method: "GET",
+				headers: {
+					Authorization: `Bearer ${idToken.value}`,
+				},
+			},
+		);
+		const data: ListVideosResponse = await response.json();
+		processingFiles.value = data?.videos?.filter(
+			(video) => video.status === VideoStatus.PENDING,
+		);
+		processedFiles.value = data?.videos?.filter(
+			(video) => video.status === VideoStatus.PROCESSED,
+		);
 
 		if (processingFiles.value.length === 0 && interval.value) {
 			clearInterval(interval.value);
@@ -56,20 +49,19 @@ const fetchProcessingVideos = async () => {
 const interval = ref<ReturnType<typeof setInterval> | null>(null);
 
 const pollingFetchProcessingVideos = () => {
-	fetchProcessingVideos();
+	fetchVideos();
 
 	if (processingFiles.value.length === 0) {
 		return;
 	}
 
-	interval.value = setInterval(fetchProcessingVideos, 5000);
+	interval.value = setInterval(fetchVideos, 5000);
 };
 
 watch(
 	isAuthenticated,
 	(newValue) => {
 		if (newValue) {
-			fetchProcessedVideos();
 			pollingFetchProcessingVideos();
 		} else {
 			processingFiles.value = [];
@@ -92,7 +84,7 @@ onUnmounted(() => {
 
 <template>
 	<UCard class="p-6 flex items-center justify-center">
-		<FileForm @submit="fetchProcessingVideos" />
+		<FileForm @submit="fetchVideos" />
 
 		<div v-if="processingFiles?.length" class="mb-5">
 			<USeparator vertical class="mb-5" />

@@ -30,12 +30,7 @@ const state = reactive<Partial<Schema>>({
 	videoList: [],
 });
 
-const removeFile = (file: File) => {
-	if (!state.videoList) return;
-	state.videoList = state.videoList.filter((f) => f.name !== file.name);
-};
-
-const { login, isAuthenticated } = useCognitoAuth();
+const { login, isAuthenticated, idToken } = useCognitoAuth();
 const toast = useToast();
 const emit = defineEmits(["submit"]);
 const config = useRuntimeConfig();
@@ -49,7 +44,7 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
 		return;
 	}
 
-	if (config.public.AMBIENT === "dev") {
+	if (config.public.AMBIENT === "test") {
 		toast.add({
 			title: "Upload bem-sucedido",
 			description:
@@ -61,37 +56,42 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
 		return;
 	}
 
-	fetch("/api/process-videos", {
-		method: "POST",
-		body: JSON.stringify({
-			videos: event.data.videoList.map((file) => ({
-				name: file.name,
-				type: file.type,
-				size: file.size,
-			})),
-		}),
-		headers: {
-			"Content-Type": "application/json",
-		},
-	})
-		.then((res) => res.json())
-		.then((data) => {
-			toast.add({
-				title: "Upload bem-sucedido",
-				description:
-					"Seus vídeos foram enviados com sucesso! O processamento pode levar alguns minutos.",
-				color: "success",
-			});
-			emit("submit", data);
-			state.videoList = [];
+	const userId = idToken.value ? idToken.value : "";
+	const uploadPromises = event.data.videoList.map((file) => {
+		const formData = new FormData();
+		formData.append("file", file);
+		const url = `${config.public.API_BASE_URL}/api/videos?userId=${encodeURIComponent(userId)}&videoName=${encodeURIComponent(file.name)}`;
+		return fetch(url, {
+			method: "POST",
+			body: formData,
+			headers: {
+				Authorization: `Bearer ${idToken.value}`,
+			},
 		})
-		.catch((err) => {
-			toast.add({
-				title: "Erro no upload",
-				description:
-					"Ocorreu um erro ao enviar os vídeos. Por favor, tente novamente.",
-				color: "error",
-			});
+			.then((res) => res.json())
+			.catch((err) => ({ error: err }));
+	});
+
+	Promise.all(uploadPromises)
+		.then((results) => {
+			const hasError = results.some((r) => r.error);
+			if (hasError) {
+				toast.add({
+					title: "Erro no upload",
+					description:
+						"Ocorreu um erro ao enviar os vídeos. Por favor, tente novamente.",
+					color: "error",
+				});
+			} else {
+				toast.add({
+					title: "Upload bem-sucedido",
+					description:
+						"Seus vídeos foram enviados com sucesso! O processamento pode levar alguns minutos.",
+					color: "success",
+				});
+				emit("submit", results);
+				state.videoList = [];
+			}
 		})
 		.finally(() => {
 			loading.value = false;

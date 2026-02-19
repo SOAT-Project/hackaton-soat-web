@@ -1,9 +1,9 @@
 <script lang="ts" setup>
-import type { FileItem } from "~/interface/file.interface";
+import type { VideoResponse } from "~/interface/response.interface";
 
-const { title, files, availableToDownload } = defineProps<{
+const { title, files, availableToDownload, processing } = defineProps<{
 	title: string;
-	files: FileItem[];
+	files: VideoResponse[];
 	availableToDownload?: boolean;
 	processing?: boolean;
 }>();

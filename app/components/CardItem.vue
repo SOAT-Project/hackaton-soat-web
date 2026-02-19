@@ -1,15 +1,18 @@
 <script lang="ts" setup>
-import type { FileItem } from "~/interface/file.interface";
+import type {
+	DonwloadFileResponse,
+	VideoResponse,
+} from "~/interface/response.interface";
 
 const props = defineProps<{
-	file: FileItem;
+	file: VideoResponse;
 	showRemoveButton?: boolean;
 	availableToDownload?: boolean;
 	processing?: boolean;
 }>();
 
 defineEmits<{
-	(remove: "remove", file: FileItem): void;
+	(remove: "remove", file: VideoResponse): void;
 }>();
 
 const timer = ref<number>(0);
@@ -30,34 +33,32 @@ onUnmounted(() => {
 	}
 });
 
-const download = (file: FileItem) => {
-	$fetch(`/api/download`)
-		.then((response) => {
-			const res = response as Response;
-			if (!res.ok) {
-				throw new Error("Erro ao baixar o arquivo.");
-			}
-			return res.blob();
-		})
-		.then((blob) => {
-			const url = window.URL.createObjectURL(blob);
-			const a = document.createElement("a");
-			a.href = url;
-			a.download = file.file_name;
-			document.body.appendChild(a);
-			a.click();
-			document.body.removeChild(a);
-			window.URL.revokeObjectURL(url);
-		})
-		.catch((error) => {
-			console.error(error);
-		});
+const { idToken } = useCognitoAuth();
+
+const download = async (file: VideoResponse) => {
+	const response = await fetch(
+		`${useRuntimeConfig().public.API_BASE_URL}/videos/${file.processId}/download`,
+		{
+			method: "GET",
+			headers: {
+				Authorization: `Bearer ${idToken.value}`,
+			},
+		},
+	);
+
+	const data: DonwloadFileResponse = await response.json();
+	const link = document.createElement("a");
+	link.href = data.donwloadUrl;
+	link.download = data.fineName;
+	document.body.appendChild(link);
+	link.click();
+	document.body.removeChild(link);
 };
 </script>
 
 <template>
 	<div
-		:key="file.file_name"
+		:key="file.videoName"
 		class="relative text-xs px-2.5 py-1.5 gap-1.5 min-w-0 flex items-center border border-default rounded-md w-full"
 	>
 		<span
@@ -78,7 +79,7 @@ const download = (file: FileItem) => {
 		</span>
 		<div class="flex flex-col min-w-0">
 			<span class="text-default truncate"
-				>{{ file.file_name }}
+				>{{ file.videoName }}
 				<span
 					class="text-muted truncate"
 					v-if="processing"
@@ -88,7 +89,7 @@ const download = (file: FileItem) => {
 				</span>
 			</span>
 			<span class="text-muted truncate">{{
-				formatByteSize(file.file_size)
+				formatByteSize(file.fileSize)
 			}}</span>
 		</div>
 		<button
