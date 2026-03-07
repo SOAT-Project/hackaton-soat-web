@@ -54,7 +54,7 @@ jobs:
       NUXT_COGNITO_AUTHORITY: ${{ secrets.NUXT_COGNITO_AUTHORITY }}
       NUXT_COGNITO_DOMAIN: ${{ secrets.NUXT_COGNITO_DOMAIN }}
       NUXT_COGNITO_REDIRECT_URI: ${{ secrets.NUXT_COGNITO_REDIRECT_URI }}
-      NUXT_AMBIENT: test
+      NUXT_AMBIENT: prod
 
     steps:
       - name: Checkout
