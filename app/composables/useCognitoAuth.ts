@@ -8,22 +8,25 @@ const isAuthenticated = ref(false);
 
 export function useCognitoAuth() {
 	const runtimeConfig = useRuntimeConfig();
+
 	const config = {
 		authority: String(runtimeConfig.public.COGNITO_AUTHORITY ?? ""),
 		client_id: String(runtimeConfig.public.COGNITO_CLIENT_ID ?? ""),
 		redirect_uri: String(runtimeConfig.public.COGNITO_REDIRECT_URI ?? ""),
 		response_type: "code",
-		scope: "openid email phone",
+		scope: "email openid profile",
 		automaticSilentRenew: true,
 		silent_redirect_uri: `${String(runtimeConfig.public.COGNITO_REDIRECT_URI ?? "")}/silent-renew.html`,
 		metadata: {
-			issuer: String(runtimeConfig.public.COGNITO_AUTHORITY ?? ""),
-			authorization_endpoint: `${String(runtimeConfig.public.COGNITO_AUTHORITY ?? "")}/oauth2/authorize`,
-			token_endpoint: `${String(runtimeConfig.public.COGNITO_AUTHORITY ?? "")}/oauth2/token`,
-			userinfo_endpoint: `${String(runtimeConfig.public.COGNITO_AUTHORITY ?? "")}/oauth2/userInfo`,
-			end_session_endpoint: `${String(runtimeConfig.public.COGNITO_AUTHORITY ?? "")}/logout`,
+			issuer: String(runtimeConfig.public.COGNITO_DOMAIN ?? ""),
+			authorization_endpoint: `${String(runtimeConfig.public.COGNITO_DOMAIN ?? "")}/oauth2/authorize`,
+			token_endpoint: `${String(runtimeConfig.public.COGNITO_DOMAIN ?? "")}/oauth2/token`,
+			userinfo_endpoint: `${String(runtimeConfig.public.COGNITO_DOMAIN ?? "")}/oauth2/userInfo`,
+			end_session_endpoint: `${String(runtimeConfig.public.COGNITO_DOMAIN ?? "")}/logout`,
 		},
 	};
+
+	console.log("Cognito config:", config);
 
 	const userManager = new UserManager(config);
 
