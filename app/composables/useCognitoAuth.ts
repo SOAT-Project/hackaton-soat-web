@@ -26,8 +26,6 @@ export function useCognitoAuth() {
 		},
 	};
 
-	console.log("Cognito config:", config);
-
 	const userManager = new UserManager(config);
 
 	async function fetchUser() {
@@ -71,7 +69,6 @@ export function useCognitoAuth() {
 
 	async function handleCallback() {
 		const loggedUser = await userManager?.signinCallback();
-		console.log("Logged user:", loggedUser);
 		user.value = loggedUser ?? null;
 		accessToken.value = loggedUser?.access_token || null;
 		refreshToken.value = loggedUser?.refresh_token || null;

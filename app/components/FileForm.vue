@@ -30,13 +30,13 @@ const state = reactive<Partial<Schema>>({
 	videoList: [],
 });
 
-const { login, isAuthenticated, idToken } = useCognitoAuth();
+const { login, isAuthenticated, idToken, user } = useCognitoAuth();
 const toast = useToast();
 const emit = defineEmits(["submit"]);
 const config = useRuntimeConfig();
 
 async function onSubmit(event: FormSubmitEvent<Schema>) {
-	console.log(event.data);
+	loading.value = true;
 
 	if (!isAuthenticated.value) {
 		login();
@@ -44,56 +44,61 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
 		return;
 	}
 
-	if (config.public.AMBIENT === "test") {
-		toast.add({
-			title: "Upload bem-sucedido",
-			description:
-				"Seus vídeos foram enviados com sucesso! O processamento pode levar alguns minutos.",
-			color: "success",
-		});
-		emit("submit");
-		state.videoList = [];
-		return;
-	}
+	const userId = user.value?.profile?.sub ?? "";
 
-	const userId = idToken.value ? idToken.value : "";
-	const uploadPromises = event.data.videoList.map((file) => {
+	const uploadPromises = event.data.videoList.map(async (file) => {
+		const url = `${config.public.API_FILE_UPLOAD_URL}/videos?userId=${userId}&videoName=${file.name}`;
 		const formData = new FormData();
 		formData.append("file", file);
-		const url = `${config.public.API_BASE_URL}/api/videos?userId=${encodeURIComponent(userId)}&videoName=${encodeURIComponent(file.name)}`;
-		return fetch(url, {
-			method: "POST",
-			body: formData,
-			headers: {
-				Authorization: `Bearer ${idToken.value}`,
-			},
-		})
-			.then((res) => res.json())
-			.catch((err) => ({ error: err }));
+
+		try {
+			const res = await fetch(url, {
+				method: "POST",
+				body: formData,
+			});
+
+			if (!res.ok) {
+				const errorData = await res.json().catch(() => null);
+				const errorText = await res
+					.text()
+					.catch(() => "Erro desconhecido");
+
+				throw new Error(
+					errorData?.message || errorText || `Status: ${res.status}`,
+				);
+			}
+
+			return await res.json();
+		} catch (err) {
+			return {
+				error: true,
+				videoName: file.name,
+			};
+		}
 	});
 
 	Promise.all(uploadPromises)
 		.then((results) => {
-			const hasError = results.some((r) => r.error);
-			if (hasError) {
+			const errors = results.filter((r) => r.error);
+
+			if (errors.length > 0) {
 				toast.add({
 					title: "Erro no upload",
-					description:
-						"Ocorreu um erro ao enviar os vídeos. Por favor, tente novamente.",
+					description: `Ocorreu um erro ao enviar o arquivo "${errors[0].videoName}".`,
 					color: "error",
 				});
 			} else {
 				toast.add({
-					title: "Upload bem-sucedido",
+					title: "Sucesso ao fazer o upload",
 					description:
 						"Seus vídeos foram enviados com sucesso! O processamento pode levar alguns minutos.",
 					color: "success",
 				});
-				emit("submit", results);
-				state.videoList = [];
 			}
 		})
 		.finally(() => {
+			emit("submit");
+			state.videoList = [];
 			loading.value = false;
 		});
 }
