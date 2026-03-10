@@ -47,7 +47,7 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
 	const userId = user.value?.profile?.sub ?? "";
 
 	const uploadPromises = event.data.videoList.map(async (file) => {
-		const url = `${config.public.API_FILE_UPLOAD_URL}/videos?userId=${userId}&videoName=${file.name}`;
+		const url = `${config.public.API_BASE_URL}/videos?userId=${userId}&videoName=${file.name}`;
 		const formData = new FormData();
 		formData.append("file", file);
 

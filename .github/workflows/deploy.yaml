@@ -54,6 +54,7 @@ jobs:
       NUXT_COGNITO_AUTHORITY: ${{ secrets.NUXT_COGNITO_AUTHORITY }}
       NUXT_COGNITO_DOMAIN: ${{ secrets.NUXT_COGNITO_DOMAIN }}
       NUXT_COGNITO_REDIRECT_URI: ${{ secrets.NUXT_COGNITO_REDIRECT_URI }}
+      NUXT_API_BASE_URL: ${{ secrets.NUXT_API_BASE_URL }}
       NUXT_AMBIENT: prod
 
     steps:
@@ -74,6 +75,7 @@ jobs:
           echo "NUXT_COGNITO_DOMAIN=${{ env.NUXT_COGNITO_DOMAIN }}" >> .env
           echo "NUXT_COGNITO_REDIRECT_URI=${{ env.NUXT_COGNITO_REDIRECT_URI }}" >> .env
           echo "NUXT_AMBIENT=${{ env.NUXT_AMBIENT }}" >> .env
+          echo "NUXT_API_BASE_URL=${{ env.NUXT_API_BASE_URL }}" >> .env
 
       - name: Install dependencies
         run: npm ci
@@ -97,8 +99,8 @@ jobs:
     needs: [build, set_environment]
     env:
       ENVIRONMENT: ${{ needs.set_environment.outputs.mapped_environment }}
-      AWS_S3_BUCKET: soat-hackaton-soat-web-${{ needs.set_environment.outputs.mapped_environment }}
-      AWS_CLOUDFRONT_DISTRIBUTION_ID: soat-hackaton-soat-web-cloudfront-${{ needs.set_environment.outputs.mapped_environment }}
+      AWS_S3_BUCKET: ${{ secrets.AWS_S3_BUCKET }}-${{ needs.set_environment.outputs.mapped_environment }}
+      AWS_CLOUDFRONT_DISTRIBUTION_ID: ${{ secrets.AWS_CLOUDFRONT_DISTRIBUTION_ID }}-${{ needs.set_environment.outputs.mapped_environment }}
 
     steps:
       - name: Download artifact
