@@ -100,7 +100,7 @@ jobs:
     env:
       ENVIRONMENT: ${{ needs.set_environment.outputs.mapped_environment }}
       AWS_S3_BUCKET: ${{ secrets.AWS_S3_BUCKET }}-${{ needs.set_environment.outputs.mapped_environment }}
-      AWS_CLOUDFRONT_DISTRIBUTION_ID: ${{ secrets.AWS_CLOUDFRONT_DISTRIBUTION_ID }}-${{ needs.set_environment.outputs.mapped_environment }}
+      AWS_CLOUDFRONT_DISTRIBUTION_ID: ${{ secrets.AWS_CLOUDFRONT_DISTRIBUTION_ID }}
 
     steps:
       - name: Download artifact
