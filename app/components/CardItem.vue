@@ -16,7 +16,7 @@ defineEmits<{
 }>();
 
 const timer = ref<number>(0);
-
+const loading = ref(false);
 const currentIconIndex = ref(0);
 
 onMounted(() => {
@@ -33,26 +33,71 @@ onUnmounted(() => {
 	}
 });
 
-const { idToken } = useCognitoAuth();
+const toast = useToast();
 
 const download = async (file: VideoResponse) => {
-	const response = await fetch(
-		`${useRuntimeConfig().public.API_BASE_URL}/videos/${file.processId}/download`,
-		{
-			method: "GET",
-			headers: {
-				Authorization: `Bearer ${idToken.value}`,
-			},
-		},
-	);
+	if (loading.value) return;
 
-	const data: DonwloadFileResponse = await response.json();
-	const link = document.createElement("a");
-	link.href = data.donwloadUrl;
-	link.download = data.fineName;
-	document.body.appendChild(link);
-	link.click();
-	document.body.removeChild(link);
+	try {
+		loading.value = true;
+
+		const response = await fetch(
+			`${useRuntimeConfig().public.API_BASE_URL}/videos/${file.processId}/download`,
+			{
+				method: "GET",
+				headers: {
+					Authorization: `Bearer ${useCognitoAuth().idToken.value}`,
+				},
+			},
+		);
+
+		if (!response.ok) {
+			throw new Error(
+				`Erro ao solicitar o download do arquivo processado. Status: ${response.status}`,
+			);
+		}
+
+		const data = await response.json();
+		const s3Url = data.downloadUrl;
+
+		const fileResponse = await fetch(s3Url);
+
+		if (!fileResponse.ok) {
+			new Error(
+				`Erro ao baixar o arquivo do S3. Status: ${fileResponse.status}`,
+			);
+		}
+
+		const blob = await fileResponse.blob();
+		const blobUrl = window.URL.createObjectURL(blob);
+		const link = document.createElement("a");
+		link.href = blobUrl;
+
+		const name = data.fileName || "processado";
+		link.download = name.endsWith(".zip") ? name : `${name}.zip`;
+
+		document.body.appendChild(link);
+		link.click();
+
+		document.body.removeChild(link);
+		window.URL.revokeObjectURL(blobUrl);
+
+		toast.add({
+			title: "Download finalizado",
+			description: `O download do arquivo "${file.videoName}" foi finalizado.`,
+			color: "success",
+		});
+		loading.value = false;
+	} catch (error: any) {
+		toast.add({
+			title: "Erro no download",
+			description:
+				error.message ||
+				"Ocorreu um erro ao tentar baixar o arquivo processado.",
+			color: "error",
+		});
+		loading.value = false;
+	}
 };
 </script>
 
@@ -88,9 +133,17 @@ const download = async (file: VideoResponse) => {
 					- Processando{{ ".".repeat((currentIconIndex % 3) + 1) }}
 				</span>
 			</span>
-			<span class="text-muted truncate">{{
-				formatByteSize(file.fileSize)
-			}}</span>
+			<span
+				class="text-muted truncate"
+				v-if="!processing && file.fileSize"
+				>{{ formatByteSize(file.fileSize) }}</span
+			>
+			<span
+				class="text-muted truncate"
+				v-if="!processing && file.status === 'FAILURE'"
+			>
+				O processamento do arquivo falhou :(
+			</span>
 		</div>
 		<button
 			class="cursor-pointer rounded-md font-medium inline-flex items-center disabled:cursor-not-allowed aria-disabled:cursor-not-allowed disabled:opacity-75 aria-disabled:opacity-75 transition-colors text-sm gap-1.5 text-muted hover:text-default active:text-default disabled:text-muted aria-disabled:text-muted focus:outline-none focus-visible:ring-inset focus-visible:ring-2 focus-visible:ring-inverted p-1.5 ms-auto -me-1.5"
@@ -102,9 +155,17 @@ const download = async (file: VideoResponse) => {
 		<button
 			class="cursor-pointer rounded-md font-medium inline-flex items-center disabled:cursor-not-allowed aria-disabled:cursor-not-allowed disabled:opacity-75 aria-disabled:opacity-75 transition-colors text-sm gap-1.5 text-muted hover:text-default active:text-default disabled:text-muted aria-disabled:text-muted focus:outline-none focus-visible:ring-inset focus-visible:ring-2 focus-visible:ring-inverted p-1.5 ms-auto -me-1.5"
 			@click="download(file)"
-			v-if="availableToDownload"
+			:disabled="loading"
+			v-if="
+				availableToDownload && !processing && file.status !== 'FAILURE'
+			"
 		>
-			<UIcon name="i-lucide:download" class="shrink-0 size-5" />
+			<UIcon
+				v-if="!loading"
+				name="i-lucide:download"
+				class="shrink-0 size-5"
+			/>
+			<UIcon v-else name="i-lucide:loader" class="shrink-0 size-5" />
 		</button>
 	</div>
 </template>

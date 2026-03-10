@@ -15,6 +15,7 @@ export interface VideoResponse {
 	videoName: string;
 	status: VideoStatus;
 	fileSize: number;
+	processedAt: Date;
 }
 
 export interface ListVideosResponse {
