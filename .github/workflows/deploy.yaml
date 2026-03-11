@@ -117,15 +117,18 @@ jobs:
 
       - name: Upload assets (long cache)
         run: |
-          aws s3 sync dist s3://${{ env.AWS_S3_BUCKET }} \
+          # Sincroniza tudo EXCETO arquivos .html
+          aws s3 sync dist/ s3://${{ env.AWS_S3_BUCKET }} \
             --exclude "*.html" \
             --cache-control "max-age=31536000,public"
 
       - name: Upload HTML (no cache)
         run: |
-          aws s3 sync dist s3://${{ env.AWS_S3_BUCKET }} \
-            --include "*.html" \
+          # Sincroniza APENAS os arquivos .html
+          # A ordem correta é: exclui tudo primeiro, depois inclui o que você quer
+          aws s3 sync dist/ s3://${{ env.AWS_S3_BUCKET }} \
             --exclude "*" \
+            --include "*.html" \
             --cache-control "max-age=0,no-cache,no-store,must-revalidate"
 
       - name: Invalidate CloudFront
