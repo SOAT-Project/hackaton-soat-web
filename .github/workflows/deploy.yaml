@@ -55,6 +55,7 @@ jobs:
       NUXT_COGNITO_DOMAIN: ${{ secrets.NUXT_COGNITO_DOMAIN }}
       NUXT_COGNITO_REDIRECT_URI: ${{ secrets.NUXT_COGNITO_REDIRECT_URI }}
       NUXT_API_BASE_URL: ${{ secrets.NUXT_API_BASE_URL }}
+      NUXT_API_UPLOAD_BASE_URL: ${{ secrets.NUXT_API_UPLOAD_BASE_URL }}
       NUXT_AMBIENT: prod
 
     steps:
@@ -76,6 +77,7 @@ jobs:
           echo "NUXT_COGNITO_REDIRECT_URI=${{ env.NUXT_COGNITO_REDIRECT_URI }}" >> .env
           echo "NUXT_AMBIENT=${{ env.NUXT_AMBIENT }}" >> .env
           echo "NUXT_API_BASE_URL=${{ env.NUXT_API_BASE_URL }}" >> .env
+          echo "NUXT_API_UPLOAD_BASE_URL=${{ env.NUXT_API_UPLOAD_BASE_URL }}" >> .env
 
       - name: Install dependencies
         run: npm ci
